@@ -56,7 +56,6 @@ def main():
         nargs="*",
     )
 
-    # parser.add_argument('--action', choices=['ADD','REMOVE','REMOVEALL'], dest='action' ,help='Please enter if the pv name is to be added/removed from the forwarder', required=True)
     group = parser.add_mutually_exclusive_group(required=True)
 
     group.add_argument("--add", "-a", action="store_true")
@@ -87,14 +86,12 @@ def main():
         else:
             if not args.my_args:
                 if not args.pv_name:
-                    # Error
                     error("Error: PV names not specified")
                 if not args.output_topic:
                     error("Error: Output topics not specified")
 
                 if len(args.pv_name) == len(args.output_topic):
                     for i in range(len(args.pv_name)):
-                        # StreamInfo("IOC:PV1", "f142", "some_topic", Protocol.Protocol.CA)
                         STREAMS.append(
                             StreamInfo(
                                 args.pv_name[i],
@@ -111,21 +108,18 @@ def main():
                 topics = args.my_args[1::2]
 
                 for i in range(len(pv_names)):
-                    # print(f"PV Name '{pv_names[i]}', Output Topic '{topics[i]}'")
-                    # StreamInfo("IOC:PV1", "f142", "some_topic", Protocol.Protocol.CA)
+                    # Syntax followed for creating a Stream
+                    # StreamInfo("IOC:PV1", "f142", "output topic", Protocol.Protocol.CA)
                     STREAMS.append(
                         StreamInfo(pv_names[i], "f142", topics[i], pv_protocol)
                     )
-                # print(STREAMS, CONFIG_TOPIC)
 
             if args.add:
-                # Add new streams
                 producer.produce(CONFIG_TOPIC, serialise_rf5k(UpdateType.ADD, STREAMS))
             elif args.remove:
                 producer.produce(
                     CONFIG_TOPIC, serialise_rf5k(UpdateType.REMOVE, [STREAMS])
                 )
-            # print(STREAMS)
         producer.flush()
     except KeyboardInterrupt:
         pass

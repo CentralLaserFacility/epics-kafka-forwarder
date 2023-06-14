@@ -54,7 +54,6 @@ topic = args.topic
 # consumer.subscribe([topic])
 
 metadata = consumer.list_topics(topic)
-# 1684240347940
 timestamp_ms = 1605272440696
 topic_partitions = [
     TopicPartition(topic, partition[1].id, offset=timestamp_ms)
@@ -76,8 +75,6 @@ try:
                     f"{msg.topic()} [{msg.partition()}] at offset {msg.offset()} with key {str(msg.key())}:"
                 )
                 schema = msg.value()[4:8]
-
-                # print(schema)
 
                 if schema == b"x5f2":
                     res = deserialise_x5f2(msg.value())
