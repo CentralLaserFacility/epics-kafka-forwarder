@@ -7,6 +7,7 @@ from streaming_data_types.fbschemas.forwarder_config_update_rf5k.UpdateType impo
 from streaming_data_types.status_x5f2 import deserialise_x5f2
 import datetime as dt
 import argparse
+import secrets
 
 
 parser = argparse.ArgumentParser(description="Reads the Messages in Kafka topic")
@@ -21,8 +22,7 @@ parser.add_argument(
 parser.add_argument(
     "--group",
     "-g",
-    default="consumer_group_name",
-    help="Enter the consumer group name",
+    help="The consumer group name. If not specified, a random one will be chosen.",
 )
 parser.add_argument(
     "--topic",
@@ -33,7 +33,7 @@ parser.add_argument(
 )
 parser.add_argument(
     "--offset",
-    choices=("latest", "earliest", "none"),
+    choices=("latest", "earliest"),
     default="latest",
     help="Enter if messages should be from earliest or only latest",
 )
@@ -49,6 +49,9 @@ args = parser.parse_args()
 
 broker = args.broker
 group = args.group
+if group is None:
+    # Choose a random group name. We want the convenience of subscribe, but not the grouping behaviour.
+    group = f"epics-kafka-forwarder/consumer@{secrets.token_hex(8)}"
 conf = {
     "bootstrap.servers": broker,
     "group.id": group,
@@ -58,16 +61,8 @@ conf = {
 consumer = Consumer(conf)
 topic = args.topic
 
-# consumer.subscribe([topic])
-
-metadata = consumer.list_topics(topic)
-timestamp_ms = 1605272440696
-topic_partitions = [
-    TopicPartition(topic, partition[1].id, offset=timestamp_ms)
-    for partition in metadata.topics[topic].partitions.items()
-]
-topic_partitions = consumer.offsets_for_times(topic_partitions)
-consumer.assign(topic_partitions)
+# This seems to make everything a bit slow on startup. We might want to switch to assign()
+consumer.subscribe([topic])
 
 try:
     while True:
