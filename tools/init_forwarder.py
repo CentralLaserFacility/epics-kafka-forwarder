@@ -19,9 +19,7 @@ def error(msg):
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Epics forwarder using kafka",
-    )
+    parser = argparse.ArgumentParser(description="Configure the EPICS-Kafka forwarder.")
 
     parser.add_argument(
         "--broker",
@@ -36,18 +34,6 @@ def main():
         help="Configuration kafka topic",
         action="store",
     )
-    parser.add_argument(
-        "--pv-name",
-        "-p",
-        help="PV names that needs to be forwarded",
-        action="append",
-    )
-    parser.add_argument(
-        "--output-topic",
-        "-o",
-        help="Kafka topics assoicated with the PVs. Please enter topics and output kafka topic in same order.",
-        action="append",
-    )
 
     parser.add_argument(
         "my_args",
@@ -58,9 +44,24 @@ def main():
 
     group = parser.add_mutually_exclusive_group(required=True)
 
-    group.add_argument("--add", "-a", action="store_true")
-    group.add_argument("--remove", "-r", action="store_true")
-    group.add_argument("--removeall", "-R", action="store_true")
+    group.add_argument(
+        "--add",
+        "-a",
+        action="store_true",
+        help="Add the provided PVs and topics to the forwarder",
+    )
+    group.add_argument(
+        "--remove",
+        "-r",
+        action="store_true",
+        help="Remove the provided PV name/topic pairs from the forwarder",
+    )
+    group.add_argument(
+        "--remove-all",
+        "-R",
+        action="store_true",
+        help="Remove all PVs from the forwarder. Do not specify any PVs or topics.",
+    )
 
     args = parser.parse_args()
     if args.broker:
@@ -77,29 +78,20 @@ def main():
     STREAMS = []
 
     try:
-        if args.removeall:
-            if args.my_args or args.pv_name or args.output_topic:
+        if args.remove_all:
+            if args.my_args:
                 error(
-                    "Error: Entered Argumens with RemoveAll. Do you mean -r/--remove?"
+                    "Error: Entered arguments with --remove-all. Did you mean --remove?"
                 )
             producer.produce(CONFIG_TOPIC, serialise_rf5k(UpdateType.REMOVEALL, []))
         else:
             if not args.my_args:
-                if not args.pv_name:
-                    error("Error: PV names not specified")
-                if not args.output_topic:
-                    error("Error: Output topics not specified")
-
-                if len(args.pv_name) == len(args.output_topic):
-                    for i in range(len(args.pv_name)):
-                        STREAMS.append(
-                            StreamInfo(
-                                args.pv_name[i],
-                                "f142",
-                                args.output_topic[i],
-                                pv_protocol,
-                            )
-                        )
+                if args.remove:
+                    error(
+                        "Error: No PV names or topic specified. Did you mean --remove-all?"
+                    )
+                else:
+                    error("Error: No PV names or topics specified.")
 
             elif len(args.my_args) % 2 != 0:
                 error("Error: Equal number of pv names and output topics not entered.")
