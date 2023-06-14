@@ -3,6 +3,7 @@ from streaming_data_types.epics_connection_info_ep00 import deserialise_ep00
 from streaming_data_types.logdata_f142 import deserialise_f142
 from streaming_data_types.exceptions import WrongSchemaException
 from streaming_data_types.forwarder_config_update_rf5k import deserialise_rf5k
+from streaming_data_types.fbschemas.forwarder_config_update_rf5k.UpdateType import UpdateType
 from streaming_data_types.status_x5f2 import deserialise_x5f2
 import datetime as dt
 import argparse
@@ -35,6 +36,12 @@ parser.add_argument(
     choices=("latest", "earliest", "none"),
     default="latest",
     help="Enter if messages should be from earliest or only latest",
+)
+parser.add_argument(
+    "--verbose",
+    "-v",
+    action="store_true",
+    help="display additional information",
 )
 
 args = parser.parse_args()
@@ -70,10 +77,11 @@ try:
         if msg.error():
             raise KafkaException(msg.error())
         else:
-            if msg.offset() >= 0:
-                print(
-                    f"{msg.topic()} [{msg.partition()}] at offset {msg.offset()} with key {str(msg.key())}:"
-                )
+            if len(msg.value()) > 8:
+                if args.verbose:
+                    print(
+                        f"{msg.topic()} [{msg.partition()}] at offset {msg.offset()}:"
+                    )
                 schema = msg.value()[4:8]
 
                 if schema == b"x5f2":
@@ -83,13 +91,18 @@ try:
                     print(deserialise_ep00(msg.value()))
                 elif schema == b"f142":
                     res = deserialise_f142(msg.value())
+                    timestamp = dt.datetime.fromtimestamp(res.timestamp_unix_ns / 1e9)
                     print(
-                        f"PV Name : {res.source_name},Timestamp : {res.timestamp_unix_ns}"
+                        f"{res.source_name}  {timestamp.isoformat()}  {res.value}"
                     )
-                    print(f"Data : {res.value} \n\n")
                 elif schema == b"rf5k":
                     res = deserialise_rf5k(msg.value())
-                    print(f"{res.streams}\n")
+                    if res.config_change == UpdateType.ADD:
+                        print(f"config: ADD {res.streams}")
+                    elif res.config_change == UpdateType.REMOVE:
+                        print(f"config: REMOVE {res.streams}")
+                    elif res.config_change == UpdateType.REMOVEALL:
+                        print(f"config: REMOVEALL")
 
 except KeyboardInterrupt:
     pass
