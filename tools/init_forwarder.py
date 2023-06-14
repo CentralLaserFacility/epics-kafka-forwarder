@@ -99,11 +99,11 @@ def main():
                 pv_names = args.my_args[::2]
                 topics = args.my_args[1::2]
 
-                for i in range(len(pv_names)):
+                for pv, topic in zip(pv_names, topics):
                     # Syntax followed for creating a Stream
                     # StreamInfo("IOC:PV1", "f142", "output topic", Protocol.Protocol.CA)
                     streams.append(
-                        StreamInfo(pv_names[i], "f142", topics[i], pv_protocol)
+                        StreamInfo(pv, "f142", topic, pv_protocol)
                     )
 
             if args.add:
