@@ -118,7 +118,7 @@ def main():
                 producer.produce(CONFIG_TOPIC, serialise_rf5k(UpdateType.ADD, STREAMS))
             elif args.remove:
                 producer.produce(
-                    CONFIG_TOPIC, serialise_rf5k(UpdateType.REMOVE, [STREAMS])
+                    CONFIG_TOPIC, serialise_rf5k(UpdateType.REMOVE, STREAMS)
                 )
         producer.flush()
     except KeyboardInterrupt:
