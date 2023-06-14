@@ -65,17 +65,17 @@ def main():
 
     args = parser.parse_args()
     if args.broker:
-        CONFIG_BROKER = ",".join(args.broker)
+        config_broker = ",".join(args.broker)
     elif os.environ.get("EPICS_FORWARDER_BROKER"):
-        CONFIG_BROKER = os.environ["EPICS_FORWARDER_BROKER"]
+        config_broker = os.environ["EPICS_FORWARDER_BROKER"]
     else:
-        CONFIG_BROKER = "localhost:9092"
+        config_broker = "localhost:9092"
 
-    CONFIG_TOPIC = args.config_topic
+    config_topic = args.config_topic
     pv_protocol = Protocol.Protocol.CA
 
-    producer = Producer({"bootstrap.servers": CONFIG_BROKER})
-    STREAMS = []
+    producer = Producer({"bootstrap.servers": config_broker})
+    streams = []
 
     try:
         if args.remove_all:
@@ -83,7 +83,7 @@ def main():
                 error(
                     "Error: Entered arguments with --remove-all. Did you mean --remove?"
                 )
-            producer.produce(CONFIG_TOPIC, serialise_rf5k(UpdateType.REMOVEALL, []))
+            producer.produce(config_topic, serialise_rf5k(UpdateType.REMOVEALL, []))
         else:
             if not args.my_args:
                 if args.remove:
@@ -102,15 +102,15 @@ def main():
                 for i in range(len(pv_names)):
                     # Syntax followed for creating a Stream
                     # StreamInfo("IOC:PV1", "f142", "output topic", Protocol.Protocol.CA)
-                    STREAMS.append(
+                    streams.append(
                         StreamInfo(pv_names[i], "f142", topics[i], pv_protocol)
                     )
 
             if args.add:
-                producer.produce(CONFIG_TOPIC, serialise_rf5k(UpdateType.ADD, STREAMS))
+                producer.produce(config_topic, serialise_rf5k(UpdateType.ADD, streams))
             elif args.remove:
                 producer.produce(
-                    CONFIG_TOPIC, serialise_rf5k(UpdateType.REMOVE, STREAMS)
+                    config_topic, serialise_rf5k(UpdateType.REMOVE, streams)
                 )
         producer.flush()
     except KeyboardInterrupt:
