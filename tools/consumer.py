@@ -10,6 +10,7 @@ from streaming_data_types.fbschemas.forwarder_config_update_rf5k.UpdateType impo
     UpdateType,
 )
 from streaming_data_types.status_x5f2 import deserialise_x5f2
+from streaming_data_types.arrays_wa00 import deserialise_wa00
 
 
 def main():
@@ -37,7 +38,7 @@ def main():
     parser.add_argument(
         "--offset",
         choices=("latest", "earliest"),
-        default="latest",
+        default="earliest",
         help="Enter if messages should be from earliest or only latest",
     )
     parser.add_argument(
@@ -89,10 +90,10 @@ def main():
                     elif schema == b"f142":
                         res = deserialise_f142(msg.value())
                         timestamp = dt.datetime.fromtimestamp(
-                            res.timestamp_unix_ns / 1e9
+                            res.timestamp_unix_ns / 100000
                         )
                         print(
-                            f"{res.source_name}  {timestamp.isoformat()}  {res.value}"
+                            f"Message offset {msg.offset()} \n {res.source_name}  {timestamp.isoformat()}  {res.value} \n Whole : {res}\n"
                         )
                     elif schema == b"rf5k":
                         res = deserialise_rf5k(msg.value())
@@ -102,7 +103,12 @@ def main():
                             print(f"config: REMOVE {res.streams}")
                         elif res.config_change == UpdateType.REMOVEALL:
                             print("config: REMOVEALL")
-
+                    elif schema == b"wa00":
+                        res = deserialise_wa00(msg.value())
+                        print(f"Message offset {msg.offset()} \n {res.timestamp}")
+                else:
+                    string = msg.value().decode("utf-8", errors="ignore")
+                    print(string)
     except KeyboardInterrupt:
         pass
 
